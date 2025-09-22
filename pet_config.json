@@ -1,0 +1,18 @@
+{
+  "pet_type": "hamster",
+  "pet_width": 50,
+  "pet_height": 50,
+  "activity_change_interval": [
+    5000,
+    10000
+  ],
+  "speech_interval": [
+    8000,
+    15000
+  ],
+  "speech_duration": 3000,
+  "custom_speeches": [
+    "Check HSM CA bên ZALO",
+    "Kiểm tra GIT xem lỗi chị Hân Log"
+  ]
+}
