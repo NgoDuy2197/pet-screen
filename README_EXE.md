@@ -3,7 +3,7 @@
 ## 📦 Cách Sử Dụng File .EXE
 
 ### 🚀 Khởi Chạy Ứng Dụng
-1. **Tải xuống**: File `Pet_Screen_Demo.exe` (36MB)
+1. **Tải xuống**: File `Pet_Screen.exe` (36MB)
 2. **Chạy**: Double-click vào file để khởi động
 3. **Không cần cài đặt**: Ứng dụng chạy ngay lập tức
 
@@ -87,7 +87,7 @@
 - **Không cần**: Python, PyQt5, hoặc thư viện khác
 
 ### 🎁 **Chia Sẻ**
-- **File duy nhất**: `Pet_Screen_Demo.exe`
+- **File duy nhất**: `Pet_Screen.exe`
 - **Không cần cài đặt**: Chạy ngay
 - **Portable**: Có thể copy sang máy khác
 

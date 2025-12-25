@@ -81,7 +81,7 @@ DEFAULT_SETTINGS = {
     'window_flags': 'frameless|topmost|tool',
     'background_transparent': True,
     'speech_interval': (8000, 15000),  # 8-15 giây
-    'speech_duration': 3000  # 3 giây hiển thị lời nói
+    'speech_duration': 8000  # 3 giây hiển thị lời nói
 }
 
 # Cài đặt hiển thị
@@ -107,11 +107,11 @@ PET_SIZE_SETTINGS = {
 # Các câu nói mẫu cho pet
 PET_SPEECH = {
     'cat': [
-        "Meo meo! 😺",
-        "Mèo muốn ăn cá! 🐟",
-        "Mèo buồn ngủ... 😴",
-        "Mèo muốn chơi! 🎾",
-        "Meo meo meo! 🐱"
+        "😺",
+        "🐟",
+        "😴",
+        "🎾",
+        "🐱"
     ],
     'dog': [
         "Gâu gâu! 🐕",
@@ -146,20 +146,7 @@ PET_SPEECH = {
 # Cài đặt mặc định cho speech
 DEFAULT_SPEECH = [
     "Xin chào! 👋",
-    "Tôi đang chơi! 🎮",
-    "Thật vui! 😊",
-    "Tôi muốn chơi! 🎯",
-    "Tôi buồn ngủ... 😴",
-    "Hôm nay thật đẹp! 🌟",
-    "Tôi thích chơi đùa! 🎪",
-    "Có ai muốn chơi không? 🤗",
-    "Tôi đói rồi! 🍕",
-    "Thời tiết thật tuyệt! ☀️",
-    "Tôi muốn đi dạo! 🚶‍♂️",
-    "Có gì mới không? 🤔",
-    "Tôi thích âm nhạc! 🎵",
-    "Hãy cùng vui vẻ! 🎉",
-    "Tôi yêu cuộc sống! ❤️"
+    "Nhớ uống nước nhé! ❤️"
 ]
 
 class ConfigManager:
@@ -183,6 +170,14 @@ class ConfigManager:
         except Exception as e:
             print(f"Lỗi khi tải cấu hình: {e}")
             return self.get_default_config()
+    
+    def reload_config(self):
+        """Reload lại cấu hình từ file"""
+        try:
+            self.config = self.load_config()
+            print(f"Đã reload cấu hình từ {self.config_file}")
+        except Exception as e:
+            print(f"Lỗi khi reload cấu hình: {e}")
     
     def save_config(self):
         """Lưu cấu hình vào file"""
@@ -260,3 +255,12 @@ class ConfigManager:
             'width': self.get('pet_width', PET_SIZE_SETTINGS['default_width']),
             'height': self.get('pet_height', PET_SIZE_SETTINGS['default_height'])
         }
+    
+    def get_auto_start(self):
+        """Lấy trạng thái auto-start"""
+        return self.get('auto_start', False)
+    
+    def set_auto_start(self, enabled):
+        """Đặt trạng thái auto-start"""
+        self.set('auto_start', enabled)
+        self.save_config()

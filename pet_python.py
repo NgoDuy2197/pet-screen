@@ -17,10 +17,11 @@ class SpeechBubble(QWidget):
         self.setFixedSize(200, 60)
         self.setStyleSheet("""
             QWidget {
-                background-color: white;
-                border: 2px solid #333;
-                border-radius: 10px;
-                color: #333;
+                background-color: #E0F7FA;
+                border: 2px solid #80DEEA; 
+                border-radius: 16px; 
+                color: #F06292;
+                padding: 3px;
             }
         """)
         
@@ -28,7 +29,7 @@ class SpeechBubble(QWidget):
         label = QLabelWidget(text)
         label.setAlignment(Qt.AlignCenter)
         label.setWordWrap(True)
-        label.setStyleSheet("font-size: 12px; font-weight: bold;")
+        label.setStyleSheet("font-size: 13px; font-weight: bold;")
         layout.addWidget(label)
         self.setLayout(layout)
 
@@ -117,7 +118,7 @@ class SpeechManager:
         self.pet = pet
         self.speech_bubble = None
         self.speech_timer = QTimer()
-        self.speech_timer.timeout.connect(self.show_random_speech)
+        # self.speech_timer.timeout.connect(self.show_random_speech)
         self.speech_duration_timer = QTimer()
         self.speech_duration_timer.timeout.connect(self.hide_speech)
         self.start_speech_timer()
@@ -153,20 +154,20 @@ class SpeechManager:
         except Exception as e:
             print(f"Lỗi khi hiển thị speech ngay lập tức: {e}")
     
-    def show_random_speech(self):
-        """Hiển thị câu nói ngẫu nhiên"""
-        try:
+    # def show_random_speech(self):
+    #     """Hiển thị câu nói ngẫu nhiên"""
+    #     try:
             # Lấy câu nói phù hợp với loại pet
-            pet_speeches = PET_SPEECH.get(self.pet.pet_type, DEFAULT_SPEECH)
-            speech_text = random.choice(pet_speeches)
+            # pet_speeches = PET_SPEECH.get(self.pet.pet_type, DEFAULT_SPEECH)
+            # speech_text = random.choice(pet_speeches)
             
             # Hiển thị bong bóng nói
-            self.show_speech_immediately(speech_text)
+            # self.show_speech_immediately(speech_text)
             
             # Đặt timer cho lần nói tiếp theo
-            self.start_speech_timer()
-        except Exception as e:
-            print(f"Lỗi khi hiển thị speech: {e}")
+            # self.start_speech_timer()
+        # except Exception as e:
+        #     print(f"Lỗi khi hiển thị speech: {e}")
     
     def hide_speech(self):
         """Ẩn bong bóng nói"""
@@ -267,26 +268,26 @@ class ActivityManager:
             
             # Lấy câu nói phù hợp với hoạt động mới
             activity_speeches = {
-                'idle': [f"Tôi sẽ nghỉ ngơi một chút... {emoji}", f"Thật thoải mái! {emoji}"],
-                'walk': [f"Tôi sẽ đi dạo một chút! {emoji}", f"Đi bộ thật vui! {emoji}"],
-                'run': [f"Chạy thật thú vị! {emoji}", f"Tôi thích chạy! {emoji}"],
-                'jump': [f"Nhảy lên nào! {emoji}", f"Wheee! Tôi đang bay! {emoji}"],
-                'fly': [f"Bay lượn thật tự do! {emoji}", f"Tôi là chim! {emoji}"],
-                'climb': [f"Leo trèo thật thú vị! {emoji}", f"Tôi sẽ leo lên cao! {emoji}"],
-                'fall': [f"Ối! Tôi đang rơi! {emoji}", f"Ai cứu tôi! {emoji}"],
-                'die': [f"Tôi mệt rồi... {emoji}", f"Tạm biệt... {emoji}"]
+                'idle': ["😴", emoji],
+                'walk': ["🚶", emoji],
+                'run': ["🏃", emoji],
+                'jump': ["🤸", emoji],
+                'fly': ["🕊️", emoji],
+                'climb': ["🧗", emoji],
+                'fall': ["😱", emoji],
+                'die': ["💀", emoji]
             }
             
             # Lấy câu nói cho hoạt động hoặc dùng câu nói chung
-            if new_activity in activity_speeches:
-                speech_text = random.choice(activity_speeches[new_activity])
+            # if new_activity in activity_speeches:
+            #     speech_text = random.choice(activity_speeches[new_activity])
+            # else:
+            # Dùng câu nói chung từ config hoặc DEFAULT_SPEECH
+            if hasattr(self.pet, 'config_manager'):
+                custom_speeches = self.pet.config_manager.get_custom_speeches()
+                speech_text = f'{random.choice(custom_speeches)}'
             else:
-                # Dùng câu nói chung từ config hoặc DEFAULT_SPEECH
-                if hasattr(self.pet, 'config_manager'):
-                    custom_speeches = self.pet.config_manager.get_custom_speeches()
-                    speech_text = random.choice(custom_speeches)
-                else:
-                    speech_text = random.choice(DEFAULT_SPEECH)
+                speech_text = f'{random.choice(DEFAULT_SPEECH)}'
             
             # Hiển thị bong bóng nói
             if hasattr(self.pet, 'speech_manager'):

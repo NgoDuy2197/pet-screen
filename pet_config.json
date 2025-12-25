@@ -12,7 +12,8 @@
   ],
   "speech_duration": 3000,
   "custom_speeches": [
-    "Check HSM CA bên ZALO",
-    "Kiểm tra GIT xem lỗi chị Hân Log"
-  ]
+    "Check lại vừa nói gì lúc tức giận",
+    "Kiểm tra nhân phẩm xem thế nào"
+  ],
+  "auto_start": false
 }
