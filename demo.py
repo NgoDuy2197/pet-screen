@@ -8,6 +8,9 @@ from PyQt5.QtGui import QIcon
 from pet_python import Pet
 from config import SUPPORTED_PETS, ACTIVITIES, PET_SIZE_SETTINGS, ConfigManager
 
+# Các hành động cho phép điều khiển thủ công (loại trừ 'fall'/'die' vì là trạng thái phụ)
+MANUAL_ACTIVITIES = ['idle', 'walk', 'run', 'jump', 'fly', 'climb']
+
 class PetCharacter(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -331,7 +334,31 @@ class PetCharacter(QMainWindow):
             
             control_group.setLayout(control_layout)
             layout.addWidget(control_group)
-            
+
+            # Nhóm điều khiển hành động thủ công
+            action_group = QGroupBox("Điều Khiển Hành Động")
+            action_layout = QGridLayout()
+            for index, activity in enumerate(MANUAL_ACTIVITIES):
+                name = ACTIVITIES.get(activity, {}).get('name', activity)
+                btn = QPushButton(name)
+                btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: #16a085;
+                        color: white;
+                        border: none;
+                        padding: 6px 10px;
+                        border-radius: 4px;
+                        font-weight: bold;
+                    }
+                    QPushButton:hover {
+                        background-color: #138d75;
+                    }
+                """)
+                btn.clicked.connect(lambda checked=False, a=activity: self.set_pet_activity(a))
+                action_layout.addWidget(btn, index // 3, index % 3)
+            action_group.setLayout(action_layout)
+            layout.addWidget(action_group)
+
             # Nhóm cài đặt câu nói
             speech_group = QGroupBox("Cấu hình câu nói")
             speech_layout = QVBoxLayout()
@@ -432,7 +459,7 @@ class PetCharacter(QMainWindow):
             if self.pet:
                 self.pet.close()
             
-            self.pet = Pet(self.current_pet_type, self.current_width, self.current_height)
+            self.pet = Pet(self.current_pet_type, self.current_width, self.current_height, controller=self)
             self.pet.show()
             
             # Cập nhật system tray menu với action toggle pet
@@ -476,6 +503,29 @@ class PetCharacter(QMainWindow):
         except Exception as e:
             print(f"Lỗi khi cập nhật tray menu: {e}")
     
+    def set_pet_activity(self, activity):
+        """Đặt hành động cho pet theo nút điều khiển"""
+        try:
+            if self.pet:
+                self.pet.set_activity(activity)
+                print(f"Đã đặt hành động: {activity}")
+        except Exception as e:
+            print(f"Lỗi khi đặt hành động: {e}")
+
+    def switch_pet(self, pet_type):
+        """Đổi sang loại pet khác (dùng cho menu chuột phải trên pet)"""
+        try:
+            self.current_pet_type = pet_type
+            # Đồng bộ combo box trong cửa sổ chính
+            if hasattr(self, 'pet_combo'):
+                for i in range(self.pet_combo.count()):
+                    if self.pet_combo.itemData(i) == pet_type:
+                        self.pet_combo.setCurrentIndex(i)
+                        break
+            self.create_pet()
+        except Exception as e:
+            print(f"Lỗi khi đổi loại pet: {e}")
+
     def hide_pet(self):
         """Ẩn pet"""
         try:
@@ -708,8 +758,18 @@ class PetCharacter(QMainWindow):
             print(f"Lỗi khi đóng ứng dụng: {e}")
             event.accept()
 
+def _ensure_utf8_console():
+    """Tránh crash do print() tiếng Việt khi console dùng cp1252 hoặc chạy windowed."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            if stream is not None and hasattr(stream, 'reconfigure'):
+                stream.reconfigure(encoding='utf-8', errors='replace')
+        except Exception:
+            pass
+
 if __name__ == '__main__':
     try:
+        _ensure_utf8_console()
         app = QApplication(sys.argv)
         
         # Áp dụng style cho toàn bộ ứng dụng

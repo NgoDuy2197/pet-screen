@@ -21,7 +21,19 @@
 - **Rơi**: Pet rơi từ trên cao xuống
 - **Chết**: Pet chết và dừng mọi hoạt động
 
-### 🎨 Tính năng mới
+### 🖱️ Tương tác với Pet
+- **Kéo thả bằng chuột**: Giữ chuột trái và kéo để di chuyển pet đến vị trí mong muốn; thả ra pet sẽ rơi xuống đất
+- **Click để tương tác**: Click vào pet để nó nói/phản ứng; double-click để pet nhảy ăn mừng
+- **Menu chuột phải**: Chuột phải lên pet để chọn nhanh hành động, đổi loại pet, ẩn pet, mở cài đặt hoặc thoát
+- **Điều khiển hành động thủ công**: Nhóm nút trong cửa sổ chính cho phép chọn trực tiếp idle/walk/run/jump/fly/climb
+
+### ⚡ Tối ưu độ mượt
+- **Một timer khung hình duy nhất** (~60fps) thay cho 5 timer chạy song song, giảm tải CPU và giật hình
+- **Đường bay nội suy mượt** với easing thay cho công thức cũ
+- **Bong bóng nói bám theo pet** khi pet di chuyển
+- **An toàn console UTF-8**: tránh crash do in chữ tiếng Việt trên môi trường cp1252
+
+### 🎨 Tính năng khác
 - **Tự động tạo thư mục**: Khi chọn loại pet mới, hệ thống tự động tạo thư mục và copy ảnh từ thư mục "cat"
 - **Thay đổi hành động ngẫu nhiên**: Pet tự động thay đổi hành động trong khoảng 5-10 giây
 - **Cài đặt kích thước**: Có thể điều chỉnh độ rộng và chiều cao của pet (50-200px)
