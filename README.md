@@ -34,7 +34,7 @@
 - **An toàn console UTF-8**: tránh crash do in chữ tiếng Việt trên môi trường cp1252
 
 ### 🎨 Tính năng khác
-- **Tự động tạo thư mục**: Khi chọn loại pet mới, hệ thống tự động tạo thư mục và copy ảnh từ thư mục "cat"
+- **Ảnh riêng từng pet**: Cat/dog/bird/rabbit/hamster đều có bộ GIF riêng (style Pop); nếu thiếu thư mục vẫn tự copy từ cat
 - **Thay đổi hành động ngẫu nhiên**: Pet tự động thay đổi hành động trong khoảng 5-10 giây
 - **Cài đặt kích thước**: Có thể điều chỉnh độ rộng và chiều cao của pet (50-200px)
 - **Hiệu ứng nói**: Pet sẽ nói những câu ngẫu nhiên với bong bóng nói
@@ -71,11 +71,11 @@ python demo.py
 pet_screen_2/
 ├── assets/
 │   └── animations/
-│       ├── cat/          # Ảnh mèo (có sẵn)
-│       ├── dog/          # Tự động tạo và copy từ cat
-│       ├── bird/         # Tự động tạo và copy từ cat
-│       ├── rabbit/       # Tự động tạo và copy từ cat
-│       └── hamster/      # Tự động tạo và copy từ cat
+│       ├── cat/          # Pop Cat (gốc)
+│       ├── dog/          # Pop Dog (riêng)
+│       ├── bird/         # Pop Bird (riêng)
+│       ├── rabbit/       # Pop Rabbit (riêng)
+│       └── hamster/      # Pop Hamster (riêng)
 ├── config.py             # Cấu hình ứng dụng
 ├── pet_python.py         # Class Pet chính
 ├── demo.py               # Giao diện demo
