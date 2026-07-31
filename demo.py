@@ -160,7 +160,11 @@ class PetCharacter(QMainWindow):
         try:
             self.save_settings()
             if self.pet:
-                self.pet.close()
+                if hasattr(self.pet, 'cleanup'):
+                    self.pet.cleanup()
+                else:
+                    self.pet.close()
+                self.pet = None
             if self.tray_icon:
                 self.tray_icon.hide()
             QApplication.quit()
@@ -457,7 +461,12 @@ class PetCharacter(QMainWindow):
         """Tạo pet mới"""
         try:
             if self.pet:
-                self.pet.close()
+                # Cleanup đầy đủ: dừng timer + ẩn speech bubble cũ (tránh text sót loạn màn hình)
+                if hasattr(self.pet, 'cleanup'):
+                    self.pet.cleanup()
+                else:
+                    self.pet.close()
+                self.pet = None
             
             self.pet = Pet(self.current_pet_type, self.current_width, self.current_height, controller=self)
             self.pet.show()
