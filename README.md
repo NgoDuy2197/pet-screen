@@ -22,8 +22,9 @@
 - **Chết**: Pet chết và dừng mọi hoạt động
 
 ### 🖱️ Tương tác với Pet
-- **Kéo thả bằng chuột**: Giữ chuột trái và kéo để di chuyển pet đến vị trí mong muốn; thả ra pet sẽ rơi xuống đất
-- **Click để tương tác**: Click vào pet để nó nói/phản ứng; double-click để pet nhảy ăn mừng
+- **Kéo thả / ném**: Giữ chuột trái kéo pet rồi thả — pet văng theo lực kéo và nảy khi chạm cạnh/góc màn hình
+- **Click để tương tác**: Click vào pet để nó nói/phản ứng
+- **Double-click pháo hoa**: Double-click pet đang chạy trên màn hình để bắn pháo hoa tại chỗ (~3 giây)
 - **Menu chuột phải**: Chuột phải lên pet để chọn nhanh hành động, đổi loại pet, ẩn pet, mở cài đặt hoặc thoát
 - **Điều khiển hành động thủ công**: Nhóm nút trong cửa sổ chính cho phép chọn trực tiếp idle/walk/run/jump/fly/climb
 
@@ -34,7 +35,7 @@
 - **An toàn console UTF-8**: tránh crash do in chữ tiếng Việt trên môi trường cp1252
 
 ### 🎨 Tính năng khác
-- **Ảnh riêng từng pet**: Cat/dog/bird/rabbit/hamster đều có bộ GIF riêng (style Pop); nếu thiếu thư mục vẫn tự copy từ cat
+- **Ảnh riêng từng pet**: Cat giữ Pop Cat gốc (2 frame); dog/bird/rabbit/hamster dùng GIF 5 frame mượt hơn; nếu thiếu thư mục vẫn tự copy từ cat
 - **Thay đổi hành động ngẫu nhiên**: Pet tự động thay đổi hành động trong khoảng 5-10 giây
 - **Cài đặt kích thước**: Có thể điều chỉnh độ rộng và chiều cao của pet (50-200px)
 - **Hiệu ứng nói**: Pet sẽ nói những câu ngẫu nhiên với bong bóng nói

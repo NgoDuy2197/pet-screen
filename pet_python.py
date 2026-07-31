@@ -4,14 +4,27 @@ import os
 import random
 import math
 import shutil
+import time
 from PyQt5.QtWidgets import (QApplication, QLabel, QWidget, QVBoxLayout, QHBoxLayout,
                              QPushButton, QSlider, QLabel as QLabelWidget, QMenu)
-from PyQt5.QtGui import QMovie, QFont, QPainter, QColor, QPen, QCursor
-from PyQt5.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, QRect, QPoint, QSize
+from PyQt5.QtGui import QMovie, QFont, QPainter, QColor, QPen, QBrush, QCursor, QRadialGradient
+from PyQt5.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, QRect, QPoint, QPointF, QSize
 from config import SUPPORTED_PETS, ACTIVITIES, DEFAULT_SETTINGS, DISPLAY_SETTINGS, PET_SIZE_SETTINGS, PET_SPEECH, DEFAULT_SPEECH
 
 # Chu kỳ cập nhật khung hình (~60fps). Chỉ một timer duy nhất dùng cho toàn bộ chuyển động.
 TICK_MS = 16
+
+# Ném / nảy
+THROW_VELOCITY_SCALE = 2.8          # Nhân vận tốc kéo thả để văng mạnh hơn
+THROW_MAX_SPEED = 55                # Giới hạn tốc độ ném (px/frame)
+BOUNCE_DAMPING = 0.82               # Giữ năng lượng khi nảy góc
+BOUNCE_FRICTION = 0.995             # Ma sát nhẹ khi đang bay/nảy
+BOUNCE_STOP_SPEED = 1.2             # Dưới ngưỡng này thì dừng nảy
+BOUNCE_GRAVITY = 0.55
+
+# Pháo hoa
+FIREWORKS_DURATION_MS = 3000
+FIREWORKS_SIZE = 260
 
 
 class SpeechBubble(QWidget):
@@ -37,6 +50,108 @@ class SpeechBubble(QWidget):
         label.setStyleSheet("font-size: 13px; font-weight: bold;")
         layout.addWidget(label)
         self.setLayout(layout)
+
+
+class FireworksEffect(QWidget):
+    """Cửa sổ trong suốt vẽ pháo hoa tại một điểm trên màn hình (~3 giây)."""
+    def __init__(self, center_x, center_y, duration_ms=FIREWORKS_DURATION_MS, parent=None):
+        super().__init__(parent)
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
+        self.setAttribute(Qt.WA_TranslucentBackground, True)
+        self.setAttribute(Qt.WA_ShowWithoutActivating, True)
+        self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        self.setFixedSize(FIREWORKS_SIZE, FIREWORKS_SIZE)
+        self.move(int(center_x - FIREWORKS_SIZE / 2), int(center_y - FIREWORKS_SIZE / 2))
+
+        self._start = time.time()
+        self._duration = max(0.5, duration_ms / 1000.0)
+        self._bursts = [self._make_burst() for _ in range(3)]
+        self._spawn_times = [0.0, 0.35, 0.75]
+
+        self._timer = QTimer(self)
+        self._timer.timeout.connect(self._on_tick)
+        self._timer.start(TICK_MS)
+
+        self._kill_timer = QTimer(self)
+        self._kill_timer.setSingleShot(True)
+        self._kill_timer.timeout.connect(self.close)
+        self._kill_timer.start(duration_ms)
+
+    def _make_burst(self):
+        colors = [
+            QColor(255, 80, 80), QColor(255, 200, 60), QColor(80, 200, 255),
+            QColor(180, 100, 255), QColor(80, 255, 140), QColor(255, 120, 200),
+            QColor(255, 255, 255),
+        ]
+        cx = FIREWORKS_SIZE / 2 + random.uniform(-28, 28)
+        cy = FIREWORKS_SIZE / 2 + random.uniform(-28, 28)
+        particles = []
+        for _ in range(36):
+            angle = random.uniform(0, math.pi * 2)
+            speed = random.uniform(2.2, 6.5)
+            particles.append({
+                'x': cx, 'y': cy,
+                'vx': math.cos(angle) * speed,
+                'vy': math.sin(angle) * speed,
+                'color': random.choice(colors),
+                'size': random.uniform(2.0, 4.5),
+                'life': 1.0,
+            })
+        return particles
+
+    def _on_tick(self):
+        elapsed = time.time() - self._start
+        if elapsed >= self._duration:
+            self.close()
+            return
+        for i, burst in enumerate(self._bursts):
+            if elapsed < self._spawn_times[i]:
+                continue
+            for p in burst:
+                p['x'] += p['vx']
+                p['y'] += p['vy']
+                p['vy'] += 0.08  # trọng lực nhẹ
+                p['vx'] *= 0.985
+                p['vy'] *= 0.985
+                p['life'] = max(0.0, p['life'] - 0.018)
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        elapsed = time.time() - self._start
+        for i, burst in enumerate(self._bursts):
+            if elapsed < self._spawn_times[i]:
+                continue
+            for p in burst:
+                if p['life'] <= 0:
+                    continue
+                c = QColor(p['color'])
+                c.setAlphaF(min(1.0, p['life']))
+                painter.setBrush(QBrush(c))
+                painter.setPen(Qt.NoPen)
+                r = p['size'] * (0.6 + 0.4 * p['life'])
+                painter.drawEllipse(QPointF(p['x'], p['y']), r, r)
+            # Flash tâm burst lúc mới nổ
+            age = elapsed - self._spawn_times[i]
+            if 0 <= age < 0.18:
+                glow = QColor(255, 255, 220, int(180 * (1 - age / 0.18)))
+                grad = QRadialGradient(FIREWORKS_SIZE / 2, FIREWORKS_SIZE / 2, 40)
+                grad.setColorAt(0.0, glow)
+                grad.setColorAt(1.0, QColor(255, 255, 255, 0))
+                painter.setBrush(QBrush(grad))
+                painter.drawEllipse(QPointF(FIREWORKS_SIZE / 2, FIREWORKS_SIZE / 2), 40, 40)
+
+    def closeEvent(self, event):
+        try:
+            if self._timer.isActive():
+                self._timer.stop()
+            if self._kill_timer.isActive():
+                self._kill_timer.stop()
+        except Exception:
+            pass
+        super().closeEvent(event)
+        self.deleteLater()
 
 class AnimationManager:
     def __init__(self, pet_type="cat"):
@@ -122,6 +237,7 @@ class SpeechManager:
     def __init__(self, pet):
         self.pet = pet
         self.speech_bubble = None
+        self._closed = False
         self.speech_duration_timer = QTimer()
         self.speech_duration_timer.setSingleShot(True)
         self.speech_duration_timer.timeout.connect(self.hide_speech)
@@ -129,9 +245,12 @@ class SpeechManager:
     def show_speech_immediately(self, speech_text):
         """Hiển thị bong bóng nói ngay lập tức"""
         try:
+            if self._closed:
+                return
             # Tạo bong bóng nói
             if self.speech_bubble:
                 self.speech_bubble.close()
+                self.speech_bubble = None
 
             self.speech_bubble = SpeechBubble(speech_text)
             self.speech_bubble.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
@@ -147,7 +266,7 @@ class SpeechManager:
     def update_position(self):
         """Cho bong bóng nói bám theo pet khi pet di chuyển"""
         try:
-            if not self.speech_bubble:
+            if not self.speech_bubble or self._closed:
                 return
             bubble_x = int(self.pet.x + self.pet.width() // 2 - self.speech_bubble.width() // 2)
             bubble_y = int(self.pet.y - self.speech_bubble.height() - 10)
@@ -158,11 +277,22 @@ class SpeechManager:
     def hide_speech(self):
         """Ẩn bong bóng nói"""
         try:
+            if self.speech_duration_timer.isActive():
+                self.speech_duration_timer.stop()
             if self.speech_bubble:
                 self.speech_bubble.close()
+                self.speech_bubble.deleteLater()
                 self.speech_bubble = None
         except Exception as e:
             print(f"Lỗi khi ẩn speech: {e}")
+
+    def cleanup(self):
+        """Dọn bubble + timer khi đổi/hủy pet (tránh text nhắc nhở sót lại)."""
+        try:
+            self._closed = True
+            self.hide_speech()
+        except Exception as e:
+            print(f"Lỗi khi cleanup speech: {e}")
 
 class ActivityManager:
     def __init__(self, pet):
@@ -213,6 +343,12 @@ class ActivityManager:
         try:
             if self.current_activity == 'die':
                 return  # Không thay đổi nếu đang chết
+            if getattr(self.pet, '_closed', False):
+                return
+            # Đang bị ném/nảy thì hoãn đổi hành động
+            if getattr(self.pet, 'is_bouncing', False):
+                self.start_activity_timer()
+                return
 
             # Dừng hoạt động hiện tại
             self.stop_current_activity()
@@ -288,6 +424,16 @@ class ActivityManager:
                     delattr(self, 'climb_phase')
         except Exception as e:
             print(f"Lỗi khi dừng activity: {e}")
+
+    def cleanup(self):
+        """Dừng mọi timer/hoạt động khi hủy pet."""
+        try:
+            if self.activity_timer.isActive():
+                self.activity_timer.stop()
+            self.stop_current_activity()
+            self.current_activity = 'idle'
+        except Exception as e:
+            print(f"Lỗi khi cleanup activity: {e}")
 
     def start_activity(self, activity_name):
         """Bắt đầu hoạt động mới"""
@@ -455,10 +601,14 @@ class Pet(QLabel):
         self.ground_y = self.screen_height - self.pet_height - 50  # Mặt đất ở dưới màn hình
         self.is_on_ground = False
 
-        # Trạng thái tương tác chuột
+        # Trạng thái tương tác chuột / ném / nảy
         self.is_dragging = False
+        self.is_bouncing = False
         self._press_pos = None
         self._drag_offset = QPoint(0, 0)
+        self._drag_samples = []  # [(t, x, y), ...] để tính vận tốc ném
+        self._active_fireworks = []
+        self._closed = False
         self._click_timer = QTimer()
         self._click_timer.setSingleShot(True)
         self._click_timer.timeout.connect(self._handle_single_click)
@@ -518,25 +668,31 @@ class Pet(QLabel):
     def on_tick(self):
         """Điều phối: mỗi khung hình chỉ chạy đúng phần chuyển động đang cần."""
         try:
+            if self._closed:
+                return
             # Khi đang kéo pet, tạm dừng mọi chuyển động tự động
             if self.is_dragging:
                 return
 
-            am = self.activity_manager
-            if am.is_jumping:
-                self.jump_animation()
-            elif am.is_flying:
-                self.fly_animation()
-            elif am.is_climbing:
-                self.climb_animation()
-            elif am.current_activity in ('walk', 'run'):
-                self.move_pet()
-            elif am.current_activity == 'fall':
-                self.fall_animation()
+            # Ưu tiên vật lý ném/nảy
+            if self.is_bouncing:
+                self.bounce_animation()
             else:
-                # idle hoặc trạng thái khác: vẫn rơi nếu đang lơ lửng
-                if not self.is_on_ground:
+                am = self.activity_manager
+                if am.is_jumping:
+                    self.jump_animation()
+                elif am.is_flying:
+                    self.fly_animation()
+                elif am.is_climbing:
+                    self.climb_animation()
+                elif am.current_activity in ('walk', 'run'):
+                    self.move_pet()
+                elif am.current_activity == 'fall':
                     self.fall_animation()
+                else:
+                    # idle hoặc trạng thái khác: vẫn rơi nếu đang lơ lửng
+                    if not self.is_on_ground:
+                        self.fall_animation()
 
             # Bong bóng nói luôn bám theo pet
             self.speech_manager.update_position()
@@ -722,6 +878,177 @@ class Pet(QLabel):
         except Exception as e:
             print(f"Lỗi khi rơi: {e}")
 
+    def bounce_animation(self):
+        """Nảy quanh màn hình sau khi bị ném (va chạm 4 cạnh)."""
+        try:
+            self.dy += BOUNCE_GRAVITY
+            self.dx *= BOUNCE_FRICTION
+            self.dy *= BOUNCE_FRICTION
+
+            self.x += self.dx
+            self.y += self.dy
+
+            min_x = 0
+            max_x = self.screen_width - self.width()
+            min_y = 0
+            max_y = self.ground_y
+
+            bounced = False
+            if self.x <= min_x:
+                self.x = min_x
+                self.dx = abs(self.dx) * BOUNCE_DAMPING
+                bounced = True
+            elif self.x >= max_x:
+                self.x = max_x
+                self.dx = -abs(self.dx) * BOUNCE_DAMPING
+                bounced = True
+
+            if self.y <= min_y:
+                self.y = min_y
+                self.dy = abs(self.dy) * BOUNCE_DAMPING
+                bounced = True
+            elif self.y >= max_y:
+                self.y = max_y
+                self.dy = -abs(self.dy) * BOUNCE_DAMPING
+                bounced = True
+                # Ma sát sàn khi chạm đất
+                self.dx *= 0.9
+
+            speed = math.hypot(self.dx, self.dy)
+            # Dừng khi đã chậm và đang gần mặt đất
+            if speed < BOUNCE_STOP_SPEED and self.y >= max_y - 2:
+                self.is_bouncing = False
+                self.dx = 0
+                self.dy = 0
+                self.y = self.ground_y
+                self.is_on_ground = True
+                self.activity_manager.manual_set_activity('idle')
+            elif bounced and speed < BOUNCE_STOP_SPEED * 1.5 and self.y >= max_y - 2:
+                self.is_bouncing = False
+                self.dx = 0
+                self.dy = 0
+                self.y = self.ground_y
+                self.is_on_ground = True
+                self.activity_manager.manual_set_activity('idle')
+
+            self.move(int(self.x), int(self.y))
+        except Exception as e:
+            print(f"Lỗi khi nảy: {e}")
+
+    def start_throw(self, vx, vy):
+        """Bắt đầu trạng thái bị ném với vận tốc (px/frame)."""
+        try:
+            speed = math.hypot(vx, vy)
+            if speed > THROW_MAX_SPEED and speed > 0:
+                scale = THROW_MAX_SPEED / speed
+                vx *= scale
+                vy *= scale
+            # Đảm bảo vẫn có lực mạnh tối thiểu khi kéo nhẹ
+            if speed < 8:
+                # Nếu gần như thả đứng -> rơi thường
+                self.is_bouncing = False
+                self.dx = 0
+                self.dy = 0
+                self.is_on_ground = False
+                self.activity_manager.stop_current_activity()
+                self.set_activity('fall')
+                return
+
+            self.is_bouncing = True
+            self.is_on_ground = False
+            self.dx = vx
+            self.dy = vy
+            self.activity_manager.stop_current_activity()
+            self.activity_manager.current_activity = 'fall'
+            fall_anim = self.animation_manager.get_random_animation('fall')
+            if fall_anim:
+                self.load_animation(fall_anim)
+            # Lùi timer đổi hành động trong lúc đang nảy
+            if self.activity_manager.activity_timer.isActive():
+                self.activity_manager.activity_timer.stop()
+            self.activity_manager.activity_timer.start(12000)
+        except Exception as e:
+            print(f"Lỗi khi bắt đầu ném: {e}")
+
+    def spawn_fireworks(self, duration_ms=FIREWORKS_DURATION_MS):
+        """Bắn pháo hoa tại vị trí pet hiện tại."""
+        try:
+            if self._closed:
+                return
+            cx = self.x + self.width() / 2
+            cy = self.y + self.height() / 2
+            fx = FireworksEffect(cx, cy, duration_ms=duration_ms)
+            fx.show()
+            self._active_fireworks.append(fx)
+            # Dọn tham chiếu khi đóng
+            fx.destroyed.connect(lambda: self._forget_firework(fx))
+        except Exception as e:
+            print(f"Lỗi khi tạo pháo hoa: {e}")
+
+    def _forget_firework(self, fx):
+        try:
+            if fx in self._active_fireworks:
+                self._active_fireworks.remove(fx)
+        except Exception:
+            pass
+
+    def cleanup(self):
+        """Dọn toàn bộ tài nguyên pet (timer, speech, fireworks) trước khi hủy."""
+        try:
+            if self._closed:
+                return
+            self._closed = True
+            if self._click_timer.isActive():
+                self._click_timer.stop()
+            if hasattr(self, 'tick_timer') and self.tick_timer.isActive():
+                self.tick_timer.stop()
+            if hasattr(self, 'activity_manager'):
+                self.activity_manager.cleanup()
+            if hasattr(self, 'speech_manager'):
+                self.speech_manager.cleanup()
+            for fx in list(self._active_fireworks):
+                try:
+                    fx.close()
+                    fx.deleteLater()
+                except Exception:
+                    pass
+            self._active_fireworks.clear()
+            if hasattr(self, 'movie') and self.movie:
+                try:
+                    self.movie.stop()
+                except Exception:
+                    pass
+            self.hide()
+            self.close()
+            self.deleteLater()
+        except Exception as e:
+            print(f"Lỗi khi cleanup pet: {e}")
+
+    def closeEvent(self, event):
+        """Đảm bảo cleanup khi cửa sổ pet bị đóng."""
+        try:
+            if not self._closed:
+                # closeEvent có thể được gọi từ cleanup() hoặc close() bên ngoài
+                if self._click_timer.isActive():
+                    self._click_timer.stop()
+                if hasattr(self, 'tick_timer') and self.tick_timer.isActive():
+                    self.tick_timer.stop()
+                if hasattr(self, 'activity_manager'):
+                    self.activity_manager.cleanup()
+                if hasattr(self, 'speech_manager'):
+                    self.speech_manager.cleanup()
+                for fx in list(getattr(self, '_active_fireworks', [])):
+                    try:
+                        fx.close()
+                        fx.deleteLater()
+                    except Exception:
+                        pass
+                self._active_fireworks = []
+                self._closed = True
+        except Exception as e:
+            print(f"Lỗi closeEvent pet: {e}")
+        super().closeEvent(event)
+
     def set_size(self, width, height):
         """Thay đổi kích thước pet"""
         try:
@@ -777,6 +1104,7 @@ class Pet(QLabel):
                 self._press_pos = event.globalPos()
                 self._drag_offset = event.globalPos() - self.frameGeometry().topLeft()
                 self.is_dragging = False
+                self._drag_samples = [(time.time(), self.x, self.y)]
         except Exception as e:
             print(f"Lỗi mousePress: {e}")
 
@@ -788,10 +1116,16 @@ class Pet(QLabel):
             if (event.globalPos() - self._press_pos).manhattanLength() > 5:
                 if not self.is_dragging:
                     self.is_dragging = True
+                    self.is_bouncing = False
                     self.setCursor(Qt.ClosedHandCursor)
                 new_top_left = event.globalPos() - self._drag_offset
                 self.x, self.y = new_top_left.x(), new_top_left.y()
                 self.move(int(self.x), int(self.y))
+                now = time.time()
+                self._drag_samples.append((now, self.x, self.y))
+                # Chỉ giữ mẫu ~150ms gần nhất để tính vận tốc ném
+                cutoff = now - 0.15
+                self._drag_samples = [s for s in self._drag_samples if s[0] >= cutoff]
                 self.speech_manager.update_position()
         except Exception as e:
             print(f"Lỗi mouseMove: {e}")
@@ -802,27 +1136,40 @@ class Pet(QLabel):
                 return
             self.setCursor(Qt.OpenHandCursor)
             if self.is_dragging:
-                # Thả pet ra -> để nó rơi xuống đất
+                # Thả pet ra -> ném theo vận tốc kéo với lực mạnh + nảy góc
                 self.is_dragging = False
-                self.is_on_ground = False
-                self.dy = 0
-                self.activity_manager.stop_current_activity()
-                self.set_activity('fall')
+                vx, vy = self._compute_throw_velocity()
+                self.start_throw(vx, vy)
             else:
                 # Không kéo -> chờ xem có phải double-click không rồi mới xử lý click đơn
                 self._click_timer.start(QApplication.doubleClickInterval())
             self._press_pos = None
+            self._drag_samples = []
         except Exception as e:
             print(f"Lỗi mouseRelease: {e}")
+
+    def _compute_throw_velocity(self):
+        """Tính vận tốc ném từ các mẫu kéo gần nhất (px/frame)."""
+        samples = self._drag_samples
+        if len(samples) < 2:
+            return 0.0, 0.0
+        t0, x0, y0 = samples[0]
+        t1, x1, y1 = samples[-1]
+        dt = max(0.001, t1 - t0)
+        # px/giây -> px/frame
+        vx = ((x1 - x0) / dt) * (TICK_MS / 1000.0) * THROW_VELOCITY_SCALE
+        vy = ((y1 - y0) / dt) * (TICK_MS / 1000.0) * THROW_VELOCITY_SCALE
+        return vx, vy
 
     def mouseDoubleClickEvent(self, event):
         try:
             if event.button() != Qt.LeftButton:
                 return
-            # Hủy click đơn đang chờ và làm hành động đặc biệt
+            # Hủy click đơn đang chờ và bắn pháo hoa tại chỗ ~3s
             self._click_timer.stop()
             self.is_dragging = False
-            self._react("🎉❤️")
+            self.spawn_fireworks(FIREWORKS_DURATION_MS)
+            self._react("🎆🎉")
             self.set_activity('jump')
         except Exception as e:
             print(f"Lỗi doubleClick: {e}")
