@@ -35,7 +35,7 @@
 - **An toàn console UTF-8**: tránh crash do in chữ tiếng Việt trên môi trường cp1252
 
 ### 🎨 Tính năng khác
-- **Ảnh riêng từng pet**: Cat giữ Pop Cat gốc (2 frame); dog/bird/rabbit/hamster dùng GIF 5 frame mượt hơn; nếu thiếu thư mục vẫn tự copy từ cat
+- **Ảnh riêng từng pet**: Cat giữ Pop Cat gốc (há miệng, 2 frame); dog/bird/rabbit/hamster dùng GIF 5 frame theo đặc trưng từng loài (chó thè lưỡi, chim nháy mắt, thỏ khẽ mũi/tai, hamster phồng má) — không còn mô phỏng há miệng; nếu thiếu thư mục vẫn tự copy từ cat
 - **Thay đổi hành động ngẫu nhiên**: Pet tự động thay đổi hành động trong khoảng 5-10 giây
 - **Cài đặt kích thước**: Có thể điều chỉnh độ rộng và chiều cao của pet (50-200px)
 - **Hiệu ứng nói**: Pet sẽ nói những câu ngẫu nhiên với bong bóng nói
@@ -72,11 +72,11 @@ python demo.py
 pet_screen_2/
 ├── assets/
 │   └── animations/
-│       ├── cat/          # Pop Cat (gốc)
-│       ├── dog/          # Pop Dog (riêng)
-│       ├── bird/         # Pop Bird (riêng)
-│       ├── rabbit/       # Pop Rabbit (riêng)
-│       └── hamster/      # Pop Hamster (riêng)
+│       ├── cat/          # Pop Cat (há miệng gốc)
+│       ├── dog/          # thè lưỡi + nháy mắt
+│       ├── bird/         # nháy mắt + head bob
+│       ├── rabbit/       # khẽ mũi + vẫy tai
+│       └── hamster/      # phồng má + nháy mắt
 ├── config.py             # Cấu hình ứng dụng
 ├── pet_python.py         # Class Pet chính
 ├── demo.py               # Giao diện demo
